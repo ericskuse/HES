@@ -1,0 +1,107 @@
+---
+title: "Higher Education Market Segmentation"
+author: "Eric Skuse"
+date: "6/15/2020"
+output:
+  html_document: default
+  word_document: default
+---
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(readxl)
+IPEDsColleges <- read_excel("~/Documents/GitHub/Segmentation/Data/IPEDsColleges.xlsx")
+```
+
+## Data Prep
+
+Here it was necessary to add in a column for the region of the US each college is located in. To this you can create a vector called st.reg with state names in one column and their associated regions in the other. Then use left join to add the st.reg data to your data set. 
+
+It was also useful to add in new columns that represent changes in the values of each variable from one year to the next.
+
+```{r}
+colnames(IPEDsColleges)<-c("id","name","state","type","UG2018","UG2017","apps2018","apps2017","admitrate2018","admitrate2017","yield2018","yield2017","gradrate2018","gradrate2017","instateprice2019","instateprice2018","outstateprice2019","outstateprice2018")
+
+ipeds <- IPEDsColleges
+
+st.reg <- data.frame(state = state.name, region = state.region)
+st.reg <- rbind(st.reg, data.frame(state="District of Columbia", region="South"))
+
+ipeds <- ipeds%>%
+  left_join(st.reg , by="state")
+
+ipeds$UGchange <- ipeds$UG2018-ipeds$UG2017
+ipeds$appschange <- ipeds$apps2018-ipeds$apps2017
+ipeds$admitratechange <- ipeds$admitrate2018-ipeds$admitrate2017
+ipeds$yieldchange <- ipeds$yield2018-ipeds$yield2017
+ipeds$gradratechange <- ipeds$gradrate2018-ipeds$gradrate2017
+
+head(ipeds)
+```
+
+## Applications and Yield
+
+It is possible to see how applications and yield data can be compared across regions and institutional types here. In both charts, the y axis shows the change from year to year at each institution and the horizontal access shows the total number of applications or the yield percentage from the most recent year. It is clear that the South region has more schools with declining applications from one year to the next. 
+
+```{r}
+ipeds%>%
+  ggplot(aes(x=apps2018,y=appschange, col=type))+
+  geom_point(shape=1)+
+  facet_wrap(~region)
+
+ipeds%>%
+  ggplot(aes(x=yield2018,y=yieldchange, col=type))+
+  geom_point(shape=1)+
+  facet_wrap(~region)
+```
+
+When calculating the proportion of schools that have falling application numbers in each region, the breakdown is as follows:
+
+190/534 South segment = 36%
+73/215 West = 34%
+165/432 North Central = 38%
+220/494 Northeast = 44%
+
+```{r}
+ipeds%>%
+  filter(appschange<0)%>%
+  filter(region=="Northeast")
+
+ipeds%>%
+  filter(appschange!="NA")%>%
+  filter(region=="Northeast")
+```
+## Graduation Rates
+
+A similar analysis for graduation rates shows which proportion of schools fall into the lower left quadrant of performance (graduation rates below 50% and declining in the most recent two year period). Again, it looks as though there are more schools in the lower left quadrant in the South and North Central regions.
+
+```{r}
+ipeds%>%
+  ggplot(aes(x=gradrate2018,y=gradratechange, col=type))+
+  geom_point(shape=1)+
+  facet_wrap(~region)
+```
+
+When calculating the proportion of schools that have falling application numbers in each region, the breakdown is as follows:
+
+249/987 South segment = 25%
+121/526 West = 23%
+135/733 North Central = 18%
+75/640 Northeast = 11.7%
+
+```{r}
+ipeds%>%
+  filter(gradratechange<0)%>%
+  filter(region=="Northeast")%>%
+  filter(gradrate2018<50)
+
+ipeds%>%
+  filter(gradratechange!="NA")%>%
+  filter(region=="Northeast")
+```
+
+```{r}
+
+```
+
